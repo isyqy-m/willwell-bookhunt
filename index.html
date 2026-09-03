@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — Willwell Live Shopping</title>
+  <style>
+    :root{ --bg:#F7F9F8; --primary:#8EAEA2; --secondary:#A1C2BD; --text:#2E3B37; --muted:#6b7975; --danger:#c0392b; }
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);}
+    header{background:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.06);position:sticky;top:0;z-index:10;}
+    header img{height:28px;} header h1{font-size:15px;margin:0;color:var(--primary);}
+    header .badge-count{margin-left:auto;background:var(--danger);color:#fff;font-size:11px;padding:2px 7px;border-radius:10px;}
+    nav{display:flex;overflow-x:auto;background:#fff;border-top:1px solid #eee;}
+    nav button{flex:0 0 auto;padding:10px 14px;background:none;border:none;font-size:12px;color:var(--muted);white-space:nowrap;border-bottom:2px solid transparent;cursor:pointer;}
+    nav button.active{color:var(--primary);border-color:var(--primary);font-weight:700;}
+    main{padding:14px 16px 60px;}
+    .card{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+    .card h3{margin:0 0 6px;font-size:14px;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    th,td{text-align:left;padding:6px 4px;border-bottom:1px solid #f0f0f0;}
+    .btn{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;}
+    .btn:disabled{opacity:.6;cursor:not-allowed;}
+    .btn.outline{background:#fff;color:var(--primary);border:1px solid var(--primary);}
+    .btn.danger{background:var(--danger);}
+    .btn.small{padding:5px 8px;font-size:11px;}
+    .form-group{margin-bottom:8px;}
+    .form-group label{font-size:11px;color:var(--muted);display:block;margin-bottom:3px;}
+    .form-group input,.form-group textarea,.form-group select{width:100%;padding:7px;border:1px solid #ddd;border-radius:6px;font-size:12px;}
+    .row2{display:flex;gap:8px;flex-wrap:wrap;} .row2 > div{flex:1;}
+    .pin-screen{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:10px;}
+    .pin-screen input{padding:10px;font-size:16px;border-radius:8px;border:1px solid #ddd;width:180px;text-align:center;letter-spacing:4px;}
+    .error-msg{color:var(--danger);font-size:12px;margin-top:6px;white-space:pre-wrap;}
+    .badge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700;}
+    .badge.LIVE,.badge.AVAILABLE{background:#a9dfbf;color:#145a32;} .badge.DRAFT,.badge.HIDDEN{background:#eee;color:#555;}
+    .badge.SCHEDULED{background:#aed6f1;color:#154360;} .badge.CLOSED,.badge.SOLD_OUT{background:#f5b7b1;color:#78281f;}
+    .badge.NEW,.badge.UNPAID{background:#f9e79f;color:#8a6d00;}
+    .badge.PAYMENT_REVIEW,.badge.PENDING{background:#aed6f1;color:#154360;}
+    .badge.PAID,.badge.VERIFIED{background:#a9dfbf;color:#145a32;}
+    .badge.CANCELLED,.badge.REJECTED{background:#f5b7b1;color:#78281f;}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:50;}
+    .modal.open{display:flex;}
+    .modal .box{background:#fff;border-radius:12px;padding:16px;width:92%;max-width:420px;max-height:85vh;overflow-y:auto;}
+    .close-x{float:right;background:none;border:none;font-size:18px;color:#999;cursor:pointer;}
+    .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .stat-box{background:#fff;border-radius:12px;padding:14px;text-align:center;}
+    .stat-box .num{font-size:22px;font-weight:800;color:var(--primary);}
+    .stat-box .lbl{font-size:11px;color:var(--muted);}
+    .empty{text-align:center;color:var(--muted);padding:20px;font-size:12px;}
+    .muted{font-size:12px;color:var(--muted);}
+    .thumb{width:50px;height:60px;object-fit:cover;border-radius:6px;background:#eee;}
+  </style>
+</head>
+<body>
+
+<div class="pin-screen" id="pinScreen">
+  <img data-logo hidden alt="" style="height:40px;" onerror="this.style.display='none'">
+  <h2 style="color:#8EAEA2;">Admin — <span data-appname>Willwell Live Shopping</span></h2>
+  <input type="password" id="pinInput" placeholder="PIN Admin" maxlength="12" autocomplete="off">
+  <button class="btn" id="loginBtn" onclick="loginAdmin()">Masuk</button>
+  <div class="error-msg" id="pinError"></div>
+</div>
+
+<div id="adminApp" style="display:none;">
+  <header>
+    <img data-logo hidden alt="" onerror="this.style.display='none'">
+    <h1>Admin — <span data-appname>Willwell Live Shopping</span></h1>
+    <span class="badge-count" id="notifBadge" style="display:none;"></span>
+  </header>
+  <nav id="mainNav">
+    <button data-tab="overview" class="active" onclick="switchTab('overview')">Overview</button>
+    <button data-tab="event" onclick="switchTab('event')">Event</button>
+    <button data-tab="katalog" onclick="switchTab('katalog')">Katalog</button>
+    <button data-tab="pesanan" onclick="switchTab('pesanan')">Pesanan</button>
+    <button data-tab="pembayaran" onclick="switchTab('pembayaran')">Pembayaran</button>
+    <button data-tab="rekap" onclick="switchTab('rekap')">Rekap</button>
+    <button data-tab="pengaturan" onclick="switchTab('pengaturan')">Pengaturan</button>
+  </nav>
+  <main id="mainContent"></main>
+</div>
+
+<!-- MODAL GENERIC -->
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+
+<!-- ====================== KONFIGURASI (WAJIB DIISI) ====================== -->
+<script>
+  // Tempel URL Web App Apps Script Anda (Deploy > Manage deployments > Web app URL, berakhiran /exec).
+  // Syarat deployment: Execute as = Me, Who has access = Anyone.
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4X87sH89MpYlEGKhc1OAWAL90jZxPImobfWySPdXfSvdsaFbt1CoXwzljPdAgKj2x/exec';
+</script>
+
+<!-- ====================== SHIM google.script (pengganti google.script.run di luar Apps Script) ====================== -->
+<script>
+(function(){
+  if (typeof google !== 'undefined' && google.script && google.script.run) return; // sedang berjalan di Apps Script asli
+  var URL = (typeof APPS_SCRIPT_URL === 'string') ? APPS_SCRIPT_URL.trim() : '';
+  var configured = /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(URL);
+
+  function invoke(fn, args, onOk, onErr){
+    if (!configured){
+      onErr(new Error('APPS_SCRIPT_URL belum diisi. Buka index.html, ganti PASTE_URL_WEB_APP_ANDA_DI_SINI dengan URL Web App Apps Script (berakhiran /exec).'));
+      return;
+    }
+    // Content-Type text/plain = "simple request" -> browser tidak mengirim preflight OPTIONS (tidak didukung Apps Script)
+    fetch(URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ fn: fn, args: args || [] })
+    }).then(function(res){
+      return res.text().then(function(txt){
+        var data;
+        try { data = JSON.parse(txt); }
+        catch(e){
+          if (/accounts\.google\.com|ServiceLogin|Sign in/i.test(txt) || res.status===401 || res.status===403)
+            throw new Error('Apps Script menolak akses. Pastikan deployment: Execute as "Me" dan Who has access "Anyone", lalu deploy sebagai versi BARU.');
+          throw new Error('Respons server bukan JSON (HTTP '+res.status+'). Pastikan Code.gs terbaru (yang memiliki doPost) sudah di-deploy sebagai versi baru.');
+        }
+        if (!data || data.ok !== true) throw new Error((data && data.error) || 'Permintaan gagal.');
+        return data.result;
+      });
+    }).then(function(result){ onOk(result); })
+      .catch(function(err){
+        if (err && /Failed to fetch|NetworkError|Load failed/i.test(err.message||''))
+          err = new Error('Tidak bisa menghubungi Apps Script. Periksa koneksi internet dan APPS_SCRIPT_URL.');
+        onErr(err);
+      });
+  }
+
+  // Meniru google.script.run: setiap akses properti menghasilkan runner baru dengan handler sendiri,
+  // sehingga pola  google.script.run.withSuccessHandler(f).withFailureHandler(g).namaFungsi(a, b)
+  // maupun  runner[fn].apply(runner, args)  keduanya bekerja.
+  function makeRunner(){
+    var ok = function(){}, ko = function(e){ console.error(e); alert(e && e.message ? e.message : String(e)); };
+    var runner = new Proxy({}, {
+      get: function(_, name){
+        if (name === 'withSuccessHandler') return function(f){ if (f) ok = f; return runner; };
+        if (name === 'withFailureHandler') return function(f){ if (f) ko = f; return runner; };
+        if (name === 'withUserObject') return function(){ return runner; };
+        if (typeof name !== 'string' || name === 'then') return undefined;
+        return function(){ invoke(name, Array.prototype.slice.call(arguments), ok, ko); };
+      }
+    });
+    return runner;
+  }
+
+  function loc(){ var p={}; try{ new URLSearchParams(location.search).forEach(function(v,k){ p[k]=v; }); }catch(e){} return { parameter: p, parameters: {}, hash: location.hash.replace(/^#/,'') }; }
+  function applyHistory(method, state, p, hash){
+    try {
+      var qs;
+      if (p !== null && p !== undefined){ var u = new URLSearchParams(); Object.keys(p).forEach(function(k){ if (p[k]!==undefined && p[k]!==null && p[k]!=='') u.set(k, p[k]); }); qs = u.toString(); }
+      else qs = location.search.replace(/^\?/,'');
+      var h = (hash === null || hash === undefined) ? location.hash : (hash ? '#'+hash : '');
+      history[method](state || null, '', location.pathname + (qs ? '?'+qs : '') + h);
+    } catch(e){}
+  }
+
+  window.google = window.google || {};
+  google.script = {
+    run: new Proxy({}, { get: function(_, name){ return makeRunner()[name]; } }),  // akses baru = runner baru
+    // history/url: versi ringan berbasis History API browser (dipakai Shop untuk cadangan keranjang ?cart=...)
+    history: {
+      replace: function(state, p, hash){ applyHistory('replaceState', state, p, hash); },
+      push: function(state, p, hash){ applyHistory('pushState', state, p, hash); },
+      setChangeHandler: function(fn){ window.addEventListener('popstate', function(ev){ fn && fn({ state: ev.state, location: loc() }); }); }
+    },
+    url: { getLocation: function(cb){ cb(loc()); } },
+    host: { close: function(){}, setHeight: function(){}, setWidth: function(){}, editor: { focus: function(){} } }
+  };
+
+  // Branding (logo & nama app) diambil dari SETTINGS saat runtime, menggantikan template server-side <?= ?>
+  window.applyBranding = function(s){
+    s = s || {};
+    var m = String(s.logo_file_id || '').match(/[-\w]{25,}/);
+    var logo = m ? ('https://drive.google.com/thumbnail?id=' + m[0] + '&sz=w400') : '';
+    document.querySelectorAll('img[data-logo]').forEach(function(img){ if (logo){ img.hidden = false; img.src = logo; } });
+    if (s.app_name){
+      document.title = s.app_name;
+      document.querySelectorAll('[data-appname]').forEach(function(el){ el.textContent = s.app_name; });
+    }
+  };
+})();
+</script>
+
+<script>
+var PIN = '';
+var STATE = { events: [], currentEventId: null, books: [], orders: [], payments: [] };
+var TAB_SEQ = 0; // bertambah tiap pindah tab; callback lama diabaikan bila nilainya sudah berubah
+function stale(seq){ return seq !== TAB_SEQ; }
+function arr(v){ return Array.isArray(v) ? v : []; }
+
+// ---------- helpers ----------
+function esc(s){ return String(s===null||s===undefined?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function $(id){ return document.getElementById(id); }
+function openModal(html){ $('modalBox').innerHTML = html; $('modal').classList.add('open'); }
+function closeModal(){ $('modal').classList.remove('open'); }
+function fmtRp(n){ return 'Rp' + Math.round(Number(n)||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+function fmtDate(d){ if(!d) return '-'; var dt=new Date(d); if(isNaN(dt.getTime())) return String(d); return dt.toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function showErr(id, err){ var el=$(id); if(el) el.innerText = (err && err.message) ? err.message : String(err); }
+function setBusy(btn, busy, label){ if(!btn) return; btn.disabled = busy; if(label!==undefined) btn.innerText = label; }
+/** Wrapper google.script.run dengan failure handler default (alert) */
+function call(fnName, args, onOk, onErr){
+  var runner = google.script.run
+    .withSuccessHandler(function(res){ try{ onOk && onOk(res); }catch(e){ console.error(e); alert('Kesalahan tampilan: '+e.message); } })
+    .withFailureHandler(function(err){ console.error(fnName, err); if(onErr) onErr(err); else alert((err && err.message) || String(err)); });
+  runner[fnName].apply(runner, args || []);
+}
+// datetime-local <-> ISO
+function toLocalInput(d){
+  if(!d) return '';
+  var dt = new Date(d); if(isNaN(dt.getTime())) return '';
+  var p=function(n){return (n<10?'0':'')+n;};
+  return dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate())+'T'+p(dt.getHours())+':'+p(dt.getMinutes());
+}
+function fromLocalInput(v){ if(!v) return ''; var dt=new Date(v); return isNaN(dt.getTime()) ? '' : dt.toISOString(); }
+
+// ---------- login ----------
+function loginAdmin(){
+  var pin = $('pinInput').value;
+  $('pinError').innerText = '';
+  setBusy($('loginBtn'), true, 'Memeriksa...');
+  call('loginAdmin', [pin], function(){
+    setBusy($('loginBtn'), false, 'Masuk');
+    PIN = pin;
+    $('pinScreen').style.display='none';
+    $('adminApp').style.display='block';
+    refreshNotif();
+    setInterval(refreshNotif, 60000);
+    switchTab('overview');
+  }, function(err){ setBusy($('loginBtn'), false, 'Masuk'); showErr('pinError', err); });
+}
+$('pinInput').addEventListener('keydown', function(e){ if(e.key==='Enter') loginAdmin(); });
+
+function refreshNotif(){
+  call('getAdminNotifications', [PIN], function(n){
+    var total = (n.newOrders||0) + (n.pendingPayments||0);
+    var badge = $('notifBadge');
+    if (total>0){ badge.style.display='inline-block'; badge.innerText = total; } else badge.style.display='none';
+  }, function(){ /* diam saja */ });
+}
+
+function switchTab(tab){
+  TAB_SEQ++;
+  document.querySelectorAll('#mainNav button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-tab')===tab); });
+  var render = { overview: renderOverview, event: renderEventTab, katalog: renderKatalogTab, pesanan: renderPesananTab, pembayaran: renderPembayaranTab, rekap: renderRekapTab, pengaturan: renderPengaturanTab };
+  (render[tab] || renderOverview)();
+}
+
+// ================= OVERVIEW =================
+function renderOverview(){
+  var seq = TAB_SEQ;
+  $('mainContent').innerHTML = '<div class="empty">Memuat...</div>';
+  call('getAdminNotifications', [PIN], function(n){
+    if (stale(seq)) return;
+    call('getAllEventsAdmin', [PIN], function(events){
+      if (stale(seq)) return;
+      STATE.events = arr(events);
+      var live = STATE.events.filter(function(e){return e.effective_status==='LIVE';})[0];
+      var scheduled = STATE.events.filter(function(e){return e.effective_status==='SCHEDULED';});
+      $('mainContent').innerHTML =
+        '<div class="stat-grid">' +
+        '<div class="stat-box"><div class="num">'+n.newOrders+'</div><div class="lbl">Order Baru (UNPAID)</div></div>' +
+        '<div class="stat-box"><div class="num">'+n.pendingPayments+'</div><div class="lbl">Bukti TF Perlu Verifikasi</div></div>' +
+        '</div>' +
+        '<div class="card"><h3>Status Event</h3>' +
+        (live ? ('<p><b>'+esc(live.event_name)+'</b> <span class="badge LIVE">LIVE</span></p><p class="muted">Berakhir: '+fmtDate(live.end_datetime)+'</p>')
+              : '<p>Tidak ada event yang sedang LIVE.</p>') +
+        (scheduled.length ? '<p class="muted">Terjadwal: '+scheduled.map(function(e){return esc(e.event_name)+' ('+fmtDate(e.start_datetime)+')';}).join(', ')+'</p>' : '') +
+        '</div>';
+    }, function(err){ if (!stale(seq)) $('mainContent').innerHTML = '<div class="error-msg">'+esc(err.message)+'</div>'; });
+  }, function(err){ if (!stale(seq)) $('mainContent').innerHTML = '<div class="error-msg">'+esc(err.message)+'</div>'; });
+}
+
+// ================= EVENT =================
+function renderEventTab(){
+  $('mainContent').innerHTML = '<button class="btn" onclick="showEventForm()">+ Buat Event</button><div id="eventList" style="margin-top:10px;"><div class="empty">Memuat...</div></div>';
+  loadEvents();
+}
+function loadEvents(){
+  var seq = TAB_SEQ;
+  call('getAllEventsAdmin', [PIN], function(events){
+    if (stale(seq)) return;
+    STATE.events = arr(events);
+    var el = $('eventList'); if(!el) return;
+    if (!STATE.events.length){ el.innerHTML = '<div class="empty">Belum ada event. Klik "+ Buat Event" untuk membuat yang pertama.</div>'; return; }
+    el.innerHTML = STATE.events.map(function(e){
+      var id = esc(e.event_id);
+      var closedManually = (e.manual_close===true || String(e.manual_close).toUpperCase()==='TRUE');
+      return '<div class="card">' +
+        '<h3>'+esc(e.event_name)+' <span class="badge '+esc(e.effective_status)+'">'+esc(e.effective_status)+'</span> <span class="muted">('+id+')</span></h3>' +
+        '<p class="muted">'+fmtDate(e.start_datetime)+' — '+fmtDate(e.end_datetime)+'</p>' +
+        (e.description ? '<p class="muted">'+esc(e.description)+'</p>' : '') +
+        '<div class="row2">' +
+        '<button class="btn outline small" onclick="showEventForm(\''+id+'\')">Edit</button>' +
+        (e.status!=='LIVE' ? '<button class="btn small" onclick="setStatus(\''+id+'\',\'LIVE\')">Publish LIVE</button>' : '') +
+        (e.status==='LIVE' ? (closedManually
+            ? '<button class="btn outline small" onclick="toggleClose(\''+id+'\',false)">Buka Kembali</button>'
+            : '<button class="btn danger small" onclick="toggleClose(\''+id+'\',true)">Tutup Manual</button>') : '') +
+        (e.status!=='DRAFT' ? '<button class="btn outline small" onclick="setStatus(\''+id+'\',\'DRAFT\')">Jadikan DRAFT</button>' : '') +
+        '<button class="btn outline small" onclick="switchToKatalog(\''+id+'\')">Kelola Katalog</button>' +
+        '</div></div>';
+    }).join('');
+  }, function(err){ var el=$('eventList'); if(el && !stale(seq)) el.innerHTML = '<div class="error-msg">'+esc(err.message)+'</div>'; });
+}
+function switchToKatalog(eventId){ STATE.currentEventId = eventId; switchTab('katalog'); }
+function setStatus(eventId, status){
+  if (status==='LIVE' && !confirm('Publish event ini sebagai LIVE? Pastikan tanggal mulai/berakhir sudah benar.')) return;
+  call('setEventStatus', [PIN, eventId, status], loadEvents);
+}
+function toggleClose(eventId, val){
+  if (val && !confirm('Tutup event ini sekarang? Pembeli tidak bisa lagi membuat pesanan.')) return;
+  call('setManualClose', [PIN, eventId, val], loadEvents);
+}
+function showEventForm(eventId){
+  var ev = eventId ? STATE.events.filter(function(e){return e.event_id===eventId;})[0] : null;
+  if (eventId && !ev){ alert('Data event belum termuat. Coba lagi.'); return; }
+  openModal(
+    '<button class="close-x" onclick="closeModal()">✕</button>' +
+    '<h3>'+(ev?'Edit Event':'Buat Event')+'</h3>' +
+    '<div class="form-group"><label>Nama Event</label><input id="fEventName" value="'+(ev?esc(ev.event_name):'')+'"></div>' +
+    '<div class="form-group"><label>Deskripsi</label><textarea id="fEventDesc" rows="2">'+(ev?esc(ev.description):'')+'</textarea></div>' +
+    '<div class="row2">' +
+    '<div class="form-group"><label>Mulai</label><input type="datetime-local" id="fEventStart" value="'+(ev?toLocalInput(ev.start_datetime):'')+'"></div>' +
+    '<div class="form-group"><label>Berakhir</label><input type="datetime-local" id="fEventEnd" value="'+(ev?toLocalInput(ev.end_datetime):'')+'"></div>' +
+    '</div>' +
+    '<div class="form-group"><label>Status</label><select id="fEventStatus">' +
+      ['DRAFT','LIVE','CLOSED'].map(function(s){ return '<option value="'+s+'"'+((ev?ev.status:'DRAFT')===s?' selected':'')+'>'+s+'</option>'; }).join('') +
+    '</select></div>' +
+    '<div class="error-msg" id="fEventError"></div>' +
+    '<button class="btn" id="fEventSave" onclick="saveEvent('+(ev?("'"+esc(ev.event_id)+"'"):'null')+')">Simpan</button>'
+  );
+}
+function saveEvent(eventId){
+  var errEl = $('fEventError'); errEl.innerText = '';
+  var start = $('fEventStart').value, end = $('fEventEnd').value;
+  if (!$('fEventName').value.trim()){ errEl.innerText='Nama event wajib diisi.'; return; }
+  if (!start || !end){ errEl.innerText='Waktu mulai dan berakhir wajib diisi.'; return; }
+  if (new Date(end) <= new Date(start)){ errEl.innerText='Waktu berakhir harus setelah waktu mulai.'; return; }
+  var data = {
+    event_id: eventId,
+    event_name: $('fEventName').value.trim(),
+    description: $('fEventDesc').value,
+    start_datetime: fromLocalInput(start),
+    end_datetime: fromLocalInput(end),
+    status: $('fEventStatus').value
+  };
+  var btn = $('fEventSave'); setBusy(btn, true, 'Menyimpan...');
+  call(eventId ? 'updateEvent' : 'createEvent', [PIN, data],
+    function(){ closeModal(); loadEvents(); },
+    function(err){ setBusy(btn, false, 'Simpan'); showErr('fEventError', err); });
+}
+
+// ================= KATALOG =================
+function renderKatalogTab(){
+  $('mainContent').innerHTML =
+    '<div class="form-group"><label>Pilih Event</label><select id="katalogEventSelect" onchange="loadKatalog()"></select></div>' +
+    '<button class="btn" id="addBookBtn" onclick="showBookForm()">+ Tambah Buku</button>' +
+    '<div id="bookList" style="margin-top:10px;"><div class="empty">Memuat...</div></div>';
+  var seq = TAB_SEQ;
+  call('getAllEventsAdmin', [PIN], function(events){
+    if (stale(seq)) return;
+    STATE.events = arr(events);
+    var sel = $('katalogEventSelect'); if(!sel) return;
+    if (!STATE.events.length){
+      sel.innerHTML = '<option value="">(belum ada event)</option>';
+      $('addBookBtn').disabled = true;
+      $('bookList').innerHTML = '<div class="empty">Buat event terlebih dahulu di tab Event.</div>';
+      return;
+    }
+    sel.innerHTML = STATE.events.map(function(e){return '<option value="'+esc(e.event_id)+'">'+esc(e.event_name)+' ('+esc(e.effective_status)+')</option>';}).join('');
+    if (STATE.currentEventId && STATE.events.some(function(e){return e.event_id===STATE.currentEventId;})) sel.value = STATE.currentEventId;
+    loadKatalog();
+  }, function(err){ var el=$('bookList'); if(el) el.innerHTML = '<div class="error-msg">'+esc(err.message)+'</div>'; });
+}
+function loadKatalog(){
+  var sel = $('katalogEventSelect'); if(!sel || !sel.value) return;
+  var eventId = sel.value;
+  STATE.currentEventId = eventId;
+  $('bookList').innerHTML = '<div class="empty">Memuat...</div>';
+  var seq = TAB_SEQ;
+  call('getBooksAdmin', [PIN, eventId], function(books){
+    if (stale(seq) || STATE.currentEventId !== eventId) return;
+    STATE.books = arr(books);
+    var el = $('bookList'); if(!el) return;
+    if (!STATE.books.length){ el.innerHTML = '<div class="empty">Belum ada buku di event ini.</div>'; return; }
+    el.innerHTML = STATE.books.map(function(b){
+      var id = esc(b.book_id);
+      return '<div class="card"><div style="display:flex;gap:8px;">' +
+        (b.photo_url ? '<img class="thumb" src="'+esc(b.photo_url)+'" onerror="this.style.visibility=\'hidden\'">' : '<div class="thumb"></div>') +
+        '<div style="flex:1;"><b>'+esc(b.title)+'</b> <span class="badge '+esc(b.status)+'">'+esc(b.status)+'</span>' +
+        '<p class="muted" style="margin:2px 0;">'+esc(b.author||'-')+(b.category?' &middot; '+esc(b.category):'')+'</p>' +
+        '<p style="font-size:12px;margin:2px 0;">'+fmtRp(b.price)+' &middot; Stok: '+esc(b.stock)+' <span class="muted">('+id+')</span></p></div></div>' +
+        '<div class="row2" style="margin-top:6px;">' +
+        '<button class="btn outline small" onclick="showBookForm(\''+id+'\')">Edit</button>' +
+        (b.status==='HIDDEN'
+          ? '<button class="btn small" onclick="unhideBook(\''+id+'\')">Tampilkan Lagi</button>'
+          : '<button class="btn danger small" onclick="removeBook(\''+id+'\')">Sembunyikan</button>') +
+        '</div></div>';
+    }).join('');
+  }, function(err){ var el=$('bookList'); if(el) el.innerHTML = '<div class="error-msg">'+esc(err.message)+'</div>'; });
+}
+function removeBook(bookId){
+  if (!confirm('Sembunyikan buku ini dari katalog publik?')) return;
+  call('deleteBook', [PIN, bookId], loadKatalog);
+}
+function unhideBook(bookId){
+  var b = STATE.books.filter(function(x){return x.book_id===bookId;})[0]; if(!b) return;
+  var data = Object.assign({}, b, { status: Number(b.stock)>0 ? 'AVAILABLE' : 'SOLD_OUT' });
+  call('updateBook', [PIN, data], loadKatalog);
+}
+function showBookForm(bookId){
+  if (!STATE.currentEventId){ alert('Pilih event terlebih dahulu.'); return; }
+  var b = bookId ? STATE.books.filter(function(x){return x.book_id===bookId;})[0] : null;
+  openModal(
+    '<button class="close-x" onclick="closeModal()">✕</button>' +
+    '<h3>'+(b?'Edit Buku':'Tambah Buku')+'</h3>' +
+    '<div class="form-group"><label>URL Foto (atau upload di bawah)</label><input id="fPhotoUrl" value="'+(b?esc(b.photo_url):'')+'"></div>' +
+    '<div class="form-group"><label>Upload Foto (JPG/PNG/WEBP, maks 5MB)</label><input type="file" id="fPhotoFile" accept="image/jpeg,image/png,image/webp"></div>' +
+    '<div class="form-group"><label>Judul *</label><input id="fTitle" value="'+(b?esc(b.title):'')+'"></div>' +
+    '<div class="row2"><div class="form-group"><label>Penulis</label><input id="fAuthor" value="'+(b?esc(b.author):'')+'"></div>' +
+    '<div class="form-group"><label>Penerbit</label><input id="fPublisher" value="'+(b?esc(b.publisher):'')+'"></div></div>' +
+    '<div class="row2"><div class="form-group"><label>Harga *</label><input type="number" min="0" id="fPrice" value="'+(b?esc(b.price):'')+'"></div>' +
+    '<div class="form-group"><label>Stok *</label><input type="number" min="0" id="fStock" value="'+(b?esc(b.stock):'')+'"></div></div>' +
+    '<div class="form-group"><label>Kategori</label><input id="fCategory" value="'+(b?esc(b.category):'')+'"></div>' +
+    '<div class="form-group"><label>Deskripsi</label><textarea id="fDesc" rows="2">'+(b?esc(b.description):'')+'</textarea></div>' +
+    '<div class="error-msg" id="fBookError"></div>' +
+    '<button class="btn" id="fBookSave" onclick="saveBook('+(b?("'"+esc(b.book_id)+"'"):'null')+')">Simpan</button>'
+  );
+}
+function saveBook(bookId){
+  var errEl = $('fBookError'); errEl.innerText = '';
+  var btn = $('fBookSave');
+  var title = $('fTitle').value.trim(), price = $('fPrice').value, stock = $('fStock').value;
+  if (!title){ errEl.innerText='Judul wajib diisi.'; return; }
+  if (price==='' || isNaN(Number(price)) || Number(price)<0){ errEl.innerText='Harga tidak valid.'; return; }
+  if (stock==='' || isNaN(Number(stock)) || Number(stock)<0){ errEl.innerText='Stok tidak valid.'; return; }
+  var existing = bookId ? STATE.books.filter(function(x){return x.book_id===bookId;})[0] : null;
+  function proceed(photoUrl){
+    var data = {
+      book_id: bookId, event_id: STATE.currentEventId, photo_url: photoUrl,
+      title: title, author: $('fAuthor').value, publisher: $('fPublisher').value,
+      price: Number(price), stock: Number(stock), category: $('fCategory').value.trim(),
+      description: $('fDesc').value,
+      status: existing && existing.status==='HIDDEN' ? 'HIDDEN' : ''
+    };
+    setBusy(btn, true, 'Menyimpan...');
+    call(bookId ? 'updateBook' : 'createBook', [PIN, data],
+      function(){ closeModal(); loadKatalog(); },
+      function(err){ setBusy(btn, false, 'Simpan'); showErr('fBookError', err); });
+  }
+  var fileInput = $('fPhotoFile');
+  if (fileInput.files.length){
+    var file = fileInput.files[0];
+    if (file.size > 5*1024*1024){ errEl.innerText='Ukuran foto melebihi 5MB.'; return; }
+    setBusy(btn, true, 'Mengupload foto...');
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var base64 = e.target.result.split(',')[1];
+      call('uploadBookPhoto', [PIN, { base64: base64, mimeType: file.type, fileName: file.name }],
+        function(res){ proceed(res.url); },
+        function(err){ setBusy(btn, false, 'Simpan'); showErr('fBookError', err); });
+    };
+    reader.onerror = function(){ setBusy(btn, false, 'Simpan'); errEl.innerText='Gagal membaca file.'; };
+    reader.readAsDataURL(file);
+  } else {
+    proceed($('fPhotoUrl').value.trim());
+  }
+}
+
+// ================= PESANAN =================
+function renderPesananTab(){
+  $('mainContent').innerHTML =
+    '<div class="row2" style="margin-bottom:8px;">' +
+    '<div class="form-group"><label>Filter Status</label><select id="orderStatusFilter" onchange="loadOrders()">' +
+    '<option value="">Semua</option><option>UNPAID</option><option>PAYMENT_REVIEW</option><option>PAID</option><option>CANCELLED</option></select></div>' +
+    '</div><div id="orderList"><div class="empty">Memuat...</div></div>';
+  loadOrders();
+}
+function loadOrders(){
+  var st = $('orderStatusFilter') ? $('orderStatusFilter').value : '';
+  var seq = TAB_SEQ;
+  call('getOrdersAdmin', [PIN, { order_status: st }], function(orders){
+    if (stale(seq)) return;
+    STATE.orders = arr(orders);
+    var el = $('orderList'); if(!el) return;
+    if (!STATE.orders.length){ el.innerHTML='<div class="empty">Belum ada order.</div>'; return; }
+    el.innerHTML = STATE.orders.map(function(o){
+      var id = esc(o.order_id);
+      return '<div class="card"><b>'+id+'</b> <span class="badge '+esc(o.order_status)+'">'+esc(o.order_status)+'</span>' +
+        '<p class="muted" style="margin:2px 0;">'+esc(o.buyer_name)+' &middot; '+esc(o.whatsapp)+' &middot; '+fmtDate(o.created_at)+'</p>' +
+        '<p style="font-size:12px;">Total: '+fmtRp(o.total_amount)+'</p>' +
+        '<div class="row2">' +
+        '<button class="btn outline small" onclick="showOrderDetail(\''+id+'\')">Detail</button>' +
+        (o.order_status!=='CANCELLED' && o.order_status!=='PAID' ? '<button class="btn danger small" onclick="doCancelOrder(\''+id+'\')">Batalkan</button>' : '') +
+        '</div></div>';
+    }).join('');
+  }, function(err){ var el=$('orderList'); if(el) el.innerHTML = '<div class="error-msg">'+esc(err.message)+'</div>'; });
+}
+function showOrderDetail(orderId){
+  call('getOrderDetailAdmin', [PIN, orderId], function(d){
+    var itemsHtml = d.items.map(function(it){ return '<tr><td>'+esc(it.title_snapshot)+'</td><td>'+esc(it.quantity)+'</td><td>'+fmtRp(it.total_item)+'</td></tr>'; }).join('');
+    var oid = esc(d.order.order_id);
+    openModal(
+      '<button class="close-x" onclick="closeModal()">✕</button>' +
+      '<h3>'+oid+'</h3>' +
+      '<p>'+esc(d.order.buyer_name)+' &middot; <a href="https://wa.me/'+esc(d.order.whatsapp)+'" target="_blank">'+esc(d.order.whatsapp)+'</a><br>'+esc(d.order.address)+'</p>' +
+      '<table><tr><th>Buku</th><th>Qty</th><th>Subtotal</th></tr>'+itemsHtml+'</table>' +
+      '<p class="muted">Subtotal: '+fmtRp(d.order.subtotal_book)+' | Fee: '+fmtRp(d.order.total_fee)+' | Lain: '+fmtRp(d.order.other_fee)+'</p>' +
+      '<p><b>Total: '+fmtRp(d.order.total_amount)+'</b></p>' +
+      '<p>Status: <span class="badge '+esc(d.order.order_status)+'">'+esc(d.order.order_status)+'</span> / Bayar: '+esc(d.order.payment_status)+'</p>' +
+      (d.order.notes ? '<p class="muted">Catatan: '+esc(d.order.notes)+'</p>' : '') +
+      '<div class="form-group"><label>Biaya Lain</label><input type="number" min="0" id="fOtherFee" value="'+esc(d.order.other_fee)+'"></div>' +
+      '<button class="btn outline small" onclick="saveOtherFee(\''+oid+'\')">Update Biaya Lain</button>' +
+      (d.order.proof_url ? '<p><a href="'+esc(d.order.proof_url)+'" target="_blank">Lihat Bukti Transfer</a></p>' : '<p class="muted">Belum ada bukti transfer.</p>')
+    );
+  });
+}
+function saveOtherFee(orderId){
+  var val = $('fOtherFee').value;
+  call('updateOrderOtherFee', [PIN, orderId, val], function(){ closeModal(); loadOrders(); });
+}
+function doCancelOrder(orderId){
+  var note = prompt('Catatan pembatalan (opsional):','');
+  if (note===null) return;
+  call('cancelOrder', [PIN, orderId, note], function(){ loadOrders(); refreshNotif(); });
+}
+
+// ================= PEMBAYARAN =================
+function renderPembayaranTab(){
+  $('mainContent').innerHTML = '<div id="payList"><div class="empty">Memuat...</div></div>';
+  var seq = TAB_SEQ;
+  call('getPaymentsAdmin', [PIN, {}], function(payments){
+    if (stale(seq)) return;
+    STATE.payments = arr(payments);
+    var el = $('payList'); if(!el) return;
+    if (!STATE.payments.length){ el.innerHTML='<div class="empty">Belum ada pembayaran.</div>'; return; }
+    el.innerHTML = STATE.payments.map(function(p){
+      var pid = esc(p.payment_id);
+      return '<div class="card"><b>'+esc(p.order_id)+'</b> <span class="badge '+esc(p.status)+'">'+esc(p.status)+'</span>' +
+        '<p class="muted">Nominal: '+fmtRp(p.amount)+' &middot; Upload: '+fmtDate(p.uploaded_at)+'</p>' +
+        '<p><a href="'+esc(p.proof_url)+'" target="_blank">Lihat Bukti</a></p>' +
+        (p.status==='PENDING' ?
+          '<div class="row2"><button class="btn small" onclick="doVerify(\''+pid+'\',\'VERIFIED\')">Verifikasi</button>' +
+          '<button class="btn danger small" onclick="doVerify(\''+pid+'\',\'REJECTED\')">Tolak</button></div>'
+          : (p.admin_note ? '<p class="muted">Catatan: '+esc(p.admin_note)+'</p>' : '')) +
+        '</div>';
+    }).join('');
+  }, function(err){ var el=$('payList'); if(el) el.innerHTML = '<div class="error-msg">'+esc(err.message)+'</div>'; });
+}
+function doVerify(paymentId, decision){
+  var note = decision==='REJECTED' ? prompt('Alasan penolakan:','Bukti tidak sesuai') : '';
+  if (decision==='REJECTED' && note===null) return;
+  if (decision==='VERIFIED' && !confirm('Konfirmasi pembayaran ini sudah diterima?')) return;
+  call('verifyPayment', [PIN, paymentId, decision, note], function(){ renderPembayaranTab(); refreshNotif(); });
+}
+
+// ================= REKAP / EXPORT =================
+function renderRekapTab(){
+  $('mainContent').innerHTML =
+    '<div class="card"><h3>Export Data</h3>' +
+    '<button class="btn" onclick="doExport(\'exportOrdersExcel\')">Export Orders (Excel)</button><br><br>' +
+    '<button class="btn outline" onclick="doExport(\'exportPackingListExcel\')">Export Packing List (Excel)</button>' +
+    '<div id="exportResult" style="margin-top:10px;font-size:12px;"></div></div>';
+}
+function doExport(fn){
+  $('exportResult').innerText = 'Memproses export... (bisa memakan waktu beberapa detik)';
+  call(fn, [PIN], function(res){
+    $('exportResult').innerHTML = '<a href="'+esc(res.url)+'" target="_blank">Download '+esc(res.name)+'</a>';
+  }, function(err){ $('exportResult').innerText = err.message; });
+}
+
+// ================= PENGATURAN =================
+function renderPengaturanTab(){
+  $('mainContent').innerHTML = '<div id="settingsForm"><div class="empty">Memuat...</div></div>';
+  var seq = TAB_SEQ;
+  call('getSettingsObject', [], function(s){
+    if (stale(seq)) return;
+    s = s || {};
+    $('settingsForm').innerHTML =
+      '<div class="card">' +
+      '<div class="form-group"><label>Nama App</label><input id="sAppName" value="'+esc(s.app_name||'')+'"></div>' +
+      '<div class="form-group"><label>Fee Jastip Default (per buku)</label><input type="number" min="0" id="sFee" value="'+esc(s.default_jastip_fee||0)+'"></div>' +
+      '<div class="form-group"><label>Logo (File ID atau link Google Drive, akses "siapa saja dengan link")</label><input id="sLogo" value="'+esc(s.logo_file_id||'')+'"></div>' +
+      '<div class="form-group"><label>Bank</label><input id="sBank" value="'+esc(s.payment_bank||'')+'"></div>' +
+      '<div class="form-group"><label>No. Rekening</label><input id="sAccount" value="'+esc(s.payment_account||'')+'"></div>' +
+      '<div class="form-group"><label>Atas Nama</label><input id="sName" value="'+esc(s.payment_name||'')+'"></div>' +
+      '<div class="form-group"><label>Label Biaya Lain</label><input id="sOtherLabel" value="'+esc(s.other_fee_label||'')+'"></div>' +
+      '<div class="form-group"><label>WhatsApp Admin (format 62xxxxxxxxxx)</label><input id="sWaAdmin" value="'+esc(s.whatsapp_admin||'')+'"></div>' +
+      '<div class="error-msg" id="sError"></div>' +
+      '<button class="btn" id="sSaveBtn" onclick="saveSettings()">Simpan Pengaturan</button>' +
+      '</div>';
+  }, function(err){ var el=$('settingsForm'); if(el) el.innerHTML = '<div class="error-msg">'+esc(err.message)+'</div>'; });
+}
+function saveSettings(){
+  var logo = $('sLogo').value.trim();
+  var m = logo.match(/[-\w]{25,}/); if (m) logo = m[0]; // terima link Drive, simpan ID-nya saja
+  var wa = $('sWaAdmin').value.replace(/[^0-9]/g,''); if (wa.indexOf('0')===0) wa = '62'+wa.substring(1);
+  var data = {
+    app_name: $('sAppName').value.trim(),
+    default_jastip_fee: Number($('sFee').value)||0,
+    logo_file_id: logo,
+    payment_bank: $('sBank').value.trim(),
+    payment_account: $('sAccount').value.trim(),
+    payment_name: $('sName').value.trim(),
+    other_fee_label: $('sOtherLabel').value.trim(),
+    whatsapp_admin: wa
+  };
+  var btn = $('sSaveBtn'); setBusy(btn, true, 'Menyimpan...');
+  call('updateSettings', [PIN, data],
+    function(){ setBusy(btn, false, 'Simpan Pengaturan'); alert('Pengaturan tersimpan.'); },
+    function(err){ setBusy(btn, false, 'Simpan Pengaturan'); showErr('sError', err); });
+}
+</script>
+<script>
+// Ambil branding + sekaligus uji koneksi ke Apps Script sebelum login
+google.script.run
+  .withSuccessHandler(function(s){ applyBranding(s); })
+  .withFailureHandler(function(err){ var el = document.getElementById('pinError'); if (el) el.innerText = 'Tidak terhubung ke Apps Script: ' + (err && err.message ? err.message : err); })
+  .getSettingsObject();
+</script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3559b03bd0c14a6',t:'MTc4ODQ0NzQzMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f"}' crossorigin="anonymous"></script>
+</body>
+</html>
