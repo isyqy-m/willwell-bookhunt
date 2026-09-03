@@ -3,83 +3,501 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Willwell Live Shopping</title>
+  <title>Willwell Book Hunt</title>
   <style>
-    :root{
-      --bg:#F7F9F8; --primary:#8EAEA2; --secondary:#A1C2BD;
-      --text:#2E3B37; --muted:#6b7975; --danger:#c0392b; --white:#fff;
+    :root {
+      --bg: #F4F5F7;
+      --primary: #00A082;
+      --primary-dark: #00856C;
+      --accent: #FFC244;
+      --text: #1D1E20;
+      --muted: #7D828A;
+      --danger: #E11D48;
+      --white: #FFFFFF;
+      --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+      --radius-lg: 20px;
+      --radius-md: 12px;
+      --radius-pill: 999px;
     }
-    *{box-sizing:border-box;}
-    body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);}
-    header{position:sticky;top:0;background:var(--white);padding:12px 16px;box-shadow:0 2px 8px rgba(0,0,0,.06);z-index:20;}
-    header .row{display:flex;align-items:center;gap:10px;}
-    header img.logo{height:32px;}
-    header h1{font-size:16px;margin:0;color:var(--primary);}
-    .live-badge{background:#e74c3c;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:auto;}
-    .countdown{font-size:12px;color:var(--muted);margin-top:4px;}
-    .hero{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;padding:14px 16px;font-size:13px;}
-    .hero b{font-size:16px;display:block;margin:2px 0;}
-    .searchbar{display:flex;gap:8px;padding:10px 16px;background:var(--white);}
-    .searchbar input, .searchbar select{flex:1;min-width:0;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px;}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 16px 90px;}
-    .grid .empty{grid-column:1 / -1;}
-    .card{background:var(--white);border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,.06);overflow:hidden;display:flex;flex-direction:column;cursor:pointer;}
-    .card .img{width:100%;height:130px;object-fit:cover;background:#eee;display:block;}
-    .card .body{padding:8px;flex:1;display:flex;flex-direction:column;gap:2px;}
-    .card .title{font-size:13px;font-weight:600;line-height:1.3;}
-    .card .author{font-size:11px;color:var(--muted);}
-    .card .price{font-size:14px;font-weight:700;color:var(--primary);margin-top:4px;}
-    .card .stock{font-size:10px;color:var(--muted);}
-    .card button{margin-top:6px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:7px;font-size:12px;font-weight:600;}
-    .card button:disabled{background:#bbb;}
-    .card .incart{font-size:10px;color:#145a32;background:#e8f7ee;border-radius:6px;padding:2px 6px;align-self:flex-start;margin-top:2px;}
-    .soldout{position:relative;}
-    .soldout::after{content:'SOLD OUT';position:absolute;top:8px;left:8px;background:var(--danger);color:#fff;font-size:10px;padding:2px 6px;border-radius:6px;}
-    .archived::after{content:'ARSIP';}
-    .sticky-cart{position:fixed;bottom:0;left:0;right:0;background:var(--primary);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;z-index:30;}
-    .sticky-cart button{background:#fff;color:var(--primary);border:none;border-radius:20px;padding:8px 16px;font-weight:700;font-size:13px;}
-    .sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:40;}
-    .sheet.open{display:block;}
-    .sheet .panel{position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;max-height:88vh;overflow-y:auto;padding:16px;}
-    .sheet .panel h2{margin-top:0;font-size:16px;}
-    .close-btn{position:absolute;top:10px;right:14px;font-size:20px;background:none;border:none;color:#999;}
-    .cart-item{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #eee;align-items:center;}
-    .cart-item img{width:50px;height:60px;object-fit:cover;border-radius:6px;background:#eee;}
-    .cart-item .info{flex:1;}
-    .qty-ctrl{display:flex;align-items:center;gap:6px;}
-    .qty-ctrl button{width:26px;height:26px;border-radius:6px;border:1px solid #ddd;background:#fff;}
-    .summary-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;}
-    .summary-row.total{font-weight:700;font-size:15px;border-top:1px solid #eee;margin-top:6px;padding-top:8px;}
-    .btn-primary{width:100%;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;margin-top:10px;}
-    .btn-primary:disabled{opacity:.6;}
-    .btn-outline{width:100%;background:#fff;color:var(--primary);border:1px solid var(--primary);border-radius:10px;padding:11px;font-size:13px;font-weight:600;margin-top:8px;}
-    .btn-text{background:none;border:none;color:var(--muted);font-size:12px;text-decoration:underline;padding:6px 0;}
-    .form-group{margin-bottom:10px;}
-    .form-group label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;}
-    .form-group input, .form-group textarea{width:100%;padding:9px;border:1px solid #ddd;border-radius:8px;font-size:13px;}
-    .disclaimer{font-size:11px;color:var(--danger);margin-top:6px;}
-    .hint{font-size:11px;color:var(--muted);margin-top:4px;}
-    .empty{text-align:center;color:var(--muted);padding:40px 20px;font-size:13px;}
-    .success-box{text-align:center;padding:40px 20px;}
-    .success-box h2{color:var(--primary);}
-    .success-box .oid{font-size:20px;font-weight:800;margin:8px 0 20px;}
-    .link-btn{display:block;width:100%;padding:12px;margin-top:8px;border-radius:10px;border:1px solid var(--primary);color:var(--primary);background:#fff;font-weight:600;font-size:13px;text-decoration:none;text-align:center;}
-    .status-form{padding:16px;max-width:420px;margin:auto;}
-    .badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;}
-    .badge.NEW,.badge.UNPAID{background:#f9e79f;color:#8a6d00;}
-    .badge.PAYMENT_REVIEW{background:#aed6f1;color:#154360;}
-    .badge.PAID{background:#a9dfbf;color:#145a32;}
-    .badge.CANCELLED{background:#f5b7b1;color:#78281f;}
-    .topnav{display:flex;gap:6px;padding:8px 16px;background:#fff;font-size:12px;}
-    .topnav button{flex:1;background:none;border:1px solid #ddd;border-radius:8px;padding:6px;color:var(--muted);}
-    .topnav button.active{background:var(--primary);color:#fff;border-color:var(--primary);}
-    .error-msg{color:var(--danger);font-size:12px;margin-top:6px;white-space:pre-wrap;}
-    #archiveBanner{background:#f5b7b1;color:#78281f;text-align:center;font-size:12px;padding:6px;font-weight:600;}
-    .notice{background:#fff8e1;color:#7a5a00;font-size:12px;padding:8px 16px;border-bottom:1px solid #f3e2a0;display:flex;align-items:center;gap:8px;}
-    .notice a{color:#7a5a00;font-weight:700;cursor:pointer;}
-    .notice .x{margin-left:auto;background:none;border:none;color:#7a5a00;font-size:16px;line-height:1;}
-    .toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);background:#2E3B37;color:#fff;font-size:12px;padding:10px 14px;border-radius:10px;z-index:60;max-width:90%;box-shadow:0 4px 14px rgba(0,0,0,.2);opacity:0;transition:opacity .25s;pointer-events:none;}
-    .toast.show{opacity:1;}
+
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* HEADER */
+    header {
+      position: sticky;
+      top: 0;
+      background: var(--white);
+      padding: 14px 16px;
+      border-bottom: 1px solid #EAEBED;
+      z-index: 20;
+    }
+    header .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    header img.logo { height: 28px; }
+    header h1 {
+      font-size: 17px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .live-badge {
+      background: var(--danger);
+      color: var(--white);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      margin-left: auto;
+      letter-spacing: 0.5px;
+    }
+    .countdown {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    /* TOP TABS NAVIGATION */
+    .topnav {
+      display: flex;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--white);
+      border-bottom: 1px solid #EAEBED;
+    }
+    .topnav button {
+      flex: 1;
+      background: #F0F1F5;
+      border: none;
+      border-radius: var(--radius-pill);
+      padding: 8px 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .topnav button.active {
+      background: var(--primary);
+      color: var(--white);
+    }
+
+    /* BANNER & HERO */
+    .hero {
+      background: var(--accent);
+      color: var(--text);
+      padding: 16px;
+      margin: 12px 16px 0;
+      border-radius: var(--radius-lg);
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: var(--card-shadow);
+    }
+    .hero span { display: block; opacity: 0.85; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+    .hero b { font-size: 18px; font-weight: 800; display: block; margin: 2px 0 4px; color: #000; }
+
+    #archiveBanner {
+      background: #FFE5E5;
+      color: var(--danger);
+      text-align: center;
+      font-size: 12px;
+      padding: 10px 16px;
+      font-weight: 700;
+    }
+
+    .notice {
+      background: #FFF9E6;
+      color: #8A6D00;
+      font-size: 12px;
+      padding: 10px 16px;
+      border-bottom: 1px solid #FFEAA7;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .notice a { color: #8A6D00; font-weight: 700; cursor: pointer; text-decoration: underline; }
+    .notice .x { margin-left: auto; background: none; border: none; color: #8A6D00; font-size: 18px; cursor: pointer; }
+
+    /* SEARCH BAR */
+    .searchbar {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+    }
+    .searchbar input, .searchbar select {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 14px;
+      border: 1px solid #EAEBED;
+      border-radius: var(--radius-pill);
+      background: var(--white);
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+    .searchbar input:focus, .searchbar select:focus {
+      border-color: var(--primary);
+    }
+
+    /* CATALOG GRID & CARDS */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 4px 16px 100px;
+    }
+    .grid .empty { grid-column: 1 / -1; }
+
+    .card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--card-shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      position: relative;
+      border: 1px solid rgba(0,0,0,0.03);
+    }
+    .card .img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      background: #F0F1F5;
+      display: block;
+    }
+    .card .body {
+      padding: 10px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .card .title {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--text);
+    }
+    .card .author {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .card .price {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      margin-top: auto;
+      padding-top: 4px;
+    }
+    .card .stock {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .card button {
+      margin-top: 8px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: var(--radius-pill);
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .card button:disabled {
+      background: #EAEBED;
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+    .card .incart {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      background: #E6F5F2;
+      border-radius: var(--radius-pill);
+      padding: 3px 8px;
+      align-self: flex-start;
+      margin-top: 4px;
+    }
+    .soldout { opacity: 0.75; }
+    .soldout::after {
+      content: 'SOLD OUT';
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: var(--danger);
+      color: var(--white);
+      font-size: 9px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+    }
+    .archived::after { content: 'ARSIP'; background: var(--muted); }
+
+    /* STICKY FLOATING CART BAR */
+    .sticky-cart {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      background: var(--primary);
+      color: var(--white);
+      padding: 8px 8px 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: var(--radius-pill);
+      box-shadow: 0 8px 24px rgba(0, 160, 130, 0.35);
+      z-index: 30;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .sticky-cart button {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: var(--radius-pill);
+      padding: 10px 18px;
+      font-weight: 800;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* SHEETS / BOTTOM PANELS */
+    .sheet {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      z-index: 40;
+    }
+    .sheet.open { display: block; }
+    .sheet .panel {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--white);
+      border-radius: 24px 24px 0 0;
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 20px 16px 28px;
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+    }
+    .sheet .panel::before {
+      content: '';
+      display: block;
+      width: 36px;
+      height: 4px;
+      background: #EAEBED;
+      border-radius: 2px;
+      margin: 0 auto 16px;
+    }
+    .sheet .panel h2 {
+      margin-top: 0;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .close-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-size: 18px;
+      background: #F0F1F5;
+      border: none;
+      color: var(--muted);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* ITEM KERANJANG */
+    .cart-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #EAEBED;
+      align-items: center;
+    }
+    .cart-item img {
+      width: 52px;
+      height: 52px;
+      object-fit: cover;
+      border-radius: var(--radius-md);
+      background: #F0F1F5;
+    }
+    .cart-item .info { flex: 1; }
+    .qty-ctrl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #F0F1F5;
+      padding: 4px 8px;
+      border-radius: var(--radius-pill);
+    }
+    .qty-ctrl button {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: none;
+      background: var(--white);
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .qty-ctrl span { font-weight: 700; font-size: 12px; }
+
+    /* RINGKASAN & FORM */
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 6px 0;
+      color: var(--muted);
+    }
+    .summary-row.total {
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--text);
+      border-top: 1px dashed #EAEBED;
+      margin-top: 8px;
+      padding-top: 12px;
+    }
+    .btn-primary {
+      width: 100%;
+      background: var(--primary);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius-pill);
+      padding: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-top: 12px;
+      cursor: pointer;
+    }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-outline {
+      width: 100%;
+      background: transparent;
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+      border-radius: var(--radius-pill);
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 8px;
+      cursor: pointer;
+    }
+    .btn-text {
+      width: 100%;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 12px;
+      text-decoration: underline;
+      padding: 8px 0;
+      cursor: pointer;
+    }
+
+    .form-group { margin-bottom: 12px; }
+    .form-group label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #EAEBED;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      background: #F9FAFB;
+      outline: none;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+      background: var(--white);
+      border-color: var(--primary);
+    }
+
+    .disclaimer { font-size: 11px; color: var(--danger); margin-top: 6px; font-weight: 500; }
+    .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .empty { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 13px; font-weight: 500; }
+    
+    .success-box { text-align: center; padding: 20px 10px; }
+    .success-box h2 { color: var(--primary); font-size: 20px; }
+    .success-box .oid { font-size: 22px; font-weight: 800; margin: 8px 0 16px; color: var(--text); }
+
+    .link-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border-radius: var(--radius-pill);
+      border: 1.5px solid var(--primary);
+      color: var(--primary);
+      background: var(--white);
+      font-weight: 700;
+      font-size: 13px;
+      text-decoration: none;
+      text-align: center;
+    }
+
+    .status-form { padding: 12px 0; max-width: 420px; margin: auto; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .badge.NEW, .badge.UNPAID { background: #FFF3C4; color: #8A6D00; }
+    .badge.PAYMENT_REVIEW { background: #E1F0FF; color: #0C4A6E; }
+    .badge.PAID { background: #D1FAE5; color: #065F46; }
+    .badge.CANCELLED { background: #FFE4E6; color: #9F1239; }
+
+    .error-msg { color: var(--danger); font-size: 12px; margin-top: 6px; font-weight: 600; white-space: pre-wrap; }
+    
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 80px;
+      transform: translateX(-50%);
+      background: #1D1E20;
+      color: var(--white);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: var(--radius-pill);
+      z-index: 60;
+      max-width: 90%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
   </style>
 </head>
 <body>
@@ -87,14 +505,14 @@
 <header>
   <div class="row">
     <img class="logo" id="logoImg" data-logo hidden alt="" onerror="this.style.display='none'">
-    <h1><span data-appname>Willwell Live Shopping</span></h1>
+    <h1><span data-appname>Willwell Book Hunt</span></h1>
     <span class="live-badge" id="liveBadge" style="display:none;">● LIVE</span>
   </div>
   <div class="countdown" id="countdownText"></div>
 </header>
 
 <div class="topnav">
-  <button class="active" id="tabLive" onclick="switchView('live')">Katalog Live</button>
+  <button class="active" id="tabLive" onclick="switchView('live')">Katalog</button>
   <button id="tabArchive" onclick="switchView('archive')">Arsip</button>
   <button id="tabStatus" onclick="switchView('status')">Cek Status</button>
 </div>
@@ -181,12 +599,12 @@
   <div class="success-box">
     <h2>Pesanan Berhasil</h2>
     <div class="oid" id="successOrderId"></div>
-    <p style="font-size:12px;color:#6b7975;">Simpan Order ID di atas. Gunakan bersama nomor WA Anda untuk cek status &amp; upload bukti transfer.</p>
+    <p style="font-size:12px;color:#7D828A;">Simpan Order ID di atas. Gunakan bersama nomor WA Anda untuk cek status &amp; upload bukti transfer.</p>
     <a class="link-btn" href="#" onclick="viewInvoiceFromSuccess();return false;">Lihat Invoice</a>
     <a class="link-btn" href="#" onclick="openUploadFromSuccess();return false;">Upload Bukti Transfer</a>
     <a class="link-btn" href="#" onclick="closeSheet('successSheet');switchView('status');return false;">Cek Status Pesanan</a>
     <a class="link-btn" id="waAdminLink" href="#" target="_blank" rel="noopener">Hubungi Admin</a>
-    <a class="link-btn" href="#" onclick="closeSheet('successSheet');return false;" style="border-color:#ddd;color:#6b7975;">Tutup</a>
+    <a class="link-btn" href="#" onclick="closeSheet('successSheet');return false;" style="border-color:#EAEBED;color:#7D828A;">Tutup</a>
   </div>
 </div></div>
 
@@ -210,24 +628,21 @@
 
 <!-- ====================== KONFIGURASI (WAJIB DIISI) ====================== -->
 <script>
-  // Tempel URL Web App Apps Script Anda (Deploy > Manage deployments > Web app URL, berakhiran /exec).
-  // Syarat deployment: Execute as = Me, Who has access = Anyone.
   var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4X87sH89MpYlEGKhc1OAWAL90jZxPImobfWySPdXfSvdsaFbt1CoXwzljPdAgKj2x/exec';
 </script>
 
-<!-- ====================== SHIM google.script (pengganti google.script.run di luar Apps Script) ====================== -->
+<!-- ====================== SHIM google.script ====================== -->
 <script>
 (function(){
-  if (typeof google !== 'undefined' && google.script && google.script.run) return; // sedang berjalan di Apps Script asli
+  if (typeof google !== 'undefined' && google.script && google.script.run) return;
   var URL = (typeof APPS_SCRIPT_URL === 'string') ? APPS_SCRIPT_URL.trim() : '';
   var configured = /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(URL);
 
   function invoke(fn, args, onOk, onErr){
     if (!configured){
-      onErr(new Error('APPS_SCRIPT_URL belum diisi. Buka index.html, ganti PASTE_URL_WEB_APP_ANDA_DI_SINI dengan URL Web App Apps Script (berakhiran /exec).'));
+      onErr(new Error('APPS_SCRIPT_URL belum diisi. Buka index.html, ganti URL Web App Apps Script (berakhiran /exec).'));
       return;
     }
-    // Content-Type text/plain = "simple request" -> browser tidak mengirim preflight OPTIONS (tidak didukung Apps Script)
     fetch(URL, {
       method: 'POST',
       redirect: 'follow',
@@ -253,9 +668,6 @@
       });
   }
 
-  // Meniru google.script.run: setiap akses properti menghasilkan runner baru dengan handler sendiri,
-  // sehingga pola  google.script.run.withSuccessHandler(f).withFailureHandler(g).namaFungsi(a, b)
-  // maupun  runner[fn].apply(runner, args)  keduanya bekerja.
   function makeRunner(){
     var ok = function(){}, ko = function(e){ console.error(e); alert(e && e.message ? e.message : String(e)); };
     var runner = new Proxy({}, {
@@ -283,8 +695,7 @@
 
   window.google = window.google || {};
   google.script = {
-    run: new Proxy({}, { get: function(_, name){ return makeRunner()[name]; } }),  // akses baru = runner baru
-    // history/url: versi ringan berbasis History API browser (dipakai Shop untuk cadangan keranjang ?cart=...)
+    run: new Proxy({}, { get: function(_, name){ return makeRunner()[name]; } }),
     history: {
       replace: function(state, p, hash){ applyHistory('replaceState', state, p, hash); },
       push: function(state, p, hash){ applyHistory('pushState', state, p, hash); },
@@ -294,7 +705,6 @@
     host: { close: function(){}, setHeight: function(){}, setWidth: function(){}, editor: { focus: function(){} } }
   };
 
-  // Branding (logo & nama app) diambil dari SETTINGS saat runtime, menggantikan template server-side <?= ?>
   window.applyBranding = function(s){
     s = s || {};
     var m = String(s.logo_file_id || '').match(/[-\w]{25,}/);
@@ -312,18 +722,15 @@
 var STATE = {
   event: null,
   books: [],
-  cart: {}, // book_id -> {book, qty}
+  cart: {},
   lastOrder: null,
   settings: {},
   countdownTimer: null
 };
 
-// ================= PENYIMPANAN LOKAL (keranjang tahan refresh) =================
-// Lapis 1: localStorage (atau sessionStorage). Lapis 2: parameter URL ?cart=... lewat google.script.history,
-// untuk browser yang memblokir storage di dalam iframe (incognito / Safari / Brave).
 var CART_KEY = 'willwell_cart_v1', BUYER_KEY = 'willwell_buyer_v1', LAST_ORDER_KEY = 'willwell_last_order_v1';
 var CART_MAX_AGE_MS = 7 * 24 * 3600 * 1000;
-var CART_FROM_URL = (function(){ try{ return (new URLSearchParams(location.search).get('cart')||'').replace(/[^A-Za-z0-9_-]/g,''); }catch(e){ return ''; } })(); // diisi server dari e.parameter.cart (hanya karakter base64url)
+var CART_FROM_URL = (function(){ try{ return (new URLSearchParams(location.search).get('cart')||'').replace(/[^A-Za-z0-9_-]/g,''); }catch(e){ return ''; } })();
 var URL_HAS_CART = !!CART_FROM_URL;
 var LAST_SAVED_KEY = null;
 
@@ -361,14 +768,13 @@ var URL_CART_PENDING = null;
 var flushUrlCart = debounce(function(){
   var encoded = URL_CART_PENDING;
   try {
-    if (!encoded && !URL_HAS_CART) return; // tidak perlu menyentuh URL
+    if (!encoded && !URL_HAS_CART) return;
     if (!(typeof google !== 'undefined' && google.script && google.script.history && google.script.url)) return;
-    // pertahankan parameter lain yang mungkin ada (mis. ?page=...), hanya ganti "cart"
     google.script.url.getLocation(function(loc){
       try {
         var params = {}, cur = (loc && loc.parameter) || {};
         Object.keys(cur).forEach(function(k){ if (k !== 'cart') params[k] = cur[k]; });
-        if (URL_CART_PENDING) params.cart = URL_CART_PENDING; // pakai nilai terbaru
+        if (URL_CART_PENDING) params.cart = URL_CART_PENDING;
         google.script.history.replace(null, params, (loc && loc.hash) || null);
         URL_HAS_CART = !!URL_CART_PENDING;
       } catch(e){}
@@ -380,7 +786,7 @@ function saveCart(){
   var items = cartSnapshot();
   var eventId = STATE.event ? STATE.event.event_id : '';
   var key = cartKey(eventId, items);
-  if (key === LAST_SAVED_KEY) return; // tidak berubah -> jangan tulis ulang (juga mencegah ping-pong antar tab)
+  if (key === LAST_SAVED_KEY) return;
   LAST_SAVED_KEY = key;
   if (!items.length){ storeSet(CART_KEY, null); setUrlCart(''); return; }
   storeSet(CART_KEY, JSON.stringify({ v: 1, event_id: eventId, ts: Date.now(), items: items }));
@@ -393,7 +799,6 @@ function readSavedCart(){
   if (!saved && CART_FROM_URL) saved = decodeCartFromUrl(CART_FROM_URL);
   return saved;
 }
-/** Isi STATE.cart dari data tersimpan (placeholder). syncCartWithBooks() lalu menyesuaikan dengan stok terbaru. */
 function restoreCart(eventId){
   var saved = readSavedCart();
   if (!saved) return null;
@@ -424,7 +829,6 @@ function announceCartChanges(restoreInfo, sync){
   if (sync && sync.dropped.length) toast('Dihapus dari keranjang karena stok habis: ' + sync.dropped.join(', '));
   if (sync && sync.capped.length) toast('Jumlah disesuaikan dengan sisa stok: ' + sync.capped.join(', '));
 }
-// Sinkron antar tab: bila keranjang diubah di tab lain, ikut berubah di sini
 window.addEventListener('storage', function(e){
   if (e.key !== CART_KEY || !STATE.event) return;
   var saved = readSavedCart();
@@ -436,7 +840,6 @@ window.addEventListener('storage', function(e){
   syncCartWithBooks(); renderCartUI(); renderCatalog();
 });
 
-// data pembeli (nama/WA/alamat) & pesanan terakhir — supaya tidak perlu ketik ulang setelah refresh
 function saveBuyer(){ storeSet(BUYER_KEY, JSON.stringify({ n: $('ckName').value, w: $('ckWa').value, a: $('ckAddress').value })); }
 function readBuyer(){ try{ return JSON.parse(storeGet(BUYER_KEY) || 'null'); }catch(e){ return null; } }
 function restoreBuyer(){ var b = readBuyer(); if (!b) return; if(!$('ckName').value) $('ckName').value = b.n||''; if(!$('ckWa').value) $('ckWa').value = b.w||''; if(!$('ckAddress').value) $('ckAddress').value = b.a||''; }
@@ -461,7 +864,6 @@ function prefillStatusForm(){
   }
 }
 
-// ================= HELPERS =================
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s===null||s===undefined?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function openSheet(id){ $(id).classList.add('open'); }
@@ -500,7 +902,6 @@ function switchView(view){
   if (view==='status') prefillStatusForm();
 }
 
-// ================= LOAD DATA =================
 function init(){
   call('getShopBootstrap', [], function(data){
     STATE.settings = data.settings || {};
@@ -517,8 +918,8 @@ function applyEvent(ev, books){
     $('liveBadge').style.display = 'inline-block';
     $('heroBox').style.display = 'block';
     $('heroEventName').innerText = ev.event_name;
-    var restoreInfo = restoreCart(ev.event_id);   // 1) ambil keranjang tersimpan
-    var sync = setBooks(books);                    // 2) cocokkan dengan stok terbaru
+    var restoreInfo = restoreCart(ev.event_id);
+    var sync = setBooks(books);
     announceCartChanges(restoreInfo, sync);
     startCountdown(new Date(ev.end_datetime));
   } else {
@@ -540,7 +941,6 @@ function loadBooks(eventId){
 function setBooks(books){
   STATE.books = books;
   var sync = syncCartWithBooks();
-  // rebuild kategori tanpa duplikat
   var sel = $('categorySelect');
   var current = sel.value;
   var cats = {};
@@ -585,17 +985,16 @@ function openDetail(bookId){
   if (!b) return;
   var soldout = b.status==='SOLD_OUT' || Number(b.stock)<=0;
   $('detailContent').innerHTML =
-    imgTag(b.photo_url, '', 'width:100%;border-radius:10px;max-height:260px;object-fit:contain;background:#f2f2f2;') +
+    imgTag(b.photo_url, '', 'width:100%;border-radius:16px;max-height:260px;object-fit:contain;background:#F0F1F5;') +
     '<h2>'+esc(b.title)+'</h2>' +
-    '<p style="color:#6b7975;font-size:13px;">'+esc(b.author||'-')+' &middot; '+esc(b.publisher||'-')+'</p>' +
-    '<p style="font-weight:700;font-size:18px;color:#8EAEA2;">'+fmtRp(b.price)+'</p>' +
+    '<p style="color:#7D828A;font-size:13px;">'+esc(b.author||'-')+' &middot; '+esc(b.publisher||'-')+'</p>' +
+    '<p style="font-weight:800;font-size:20px;color:#1D1E20;">'+fmtRp(b.price)+'</p>' +
     '<p style="font-size:12px;">Kategori: '+esc(b.category||'-')+' &middot; Stok: '+esc(b.stock)+'</p>' +
     '<p style="font-size:13px;white-space:pre-wrap;">'+esc(b.description||'')+'</p>' +
     '<button class="btn-primary" '+(soldout?'disabled':'')+' onclick="addToCart(\''+esc(b.book_id)+'\');closeSheet(\'detailSheet\')">'+(soldout?'Stok Habis':'Tambah ke Keranjang')+'</button>';
   openSheet('detailSheet');
 }
 
-// ================= CART =================
 function addToCart(bookId){
   var b = findBook(bookId);
   if (!b || Number(b.stock)<=0) return;
@@ -604,6 +1003,7 @@ function addToCart(bookId){
   else alert('Stok "'+b.title+'" tinggal '+b.stock+'.');
   renderCartUI(); renderCatalog();
 }
+
 function changeQty(bookId, delta){
   var item = STATE.cart[bookId];
   if (!item) return;
@@ -612,15 +1012,18 @@ function changeQty(bookId, delta){
   else if (item.qty > Number(item.book.stock)) item.qty = Number(item.book.stock);
   renderCartUI(); renderCatalog();
 }
+
 function clearCart(){
   if (!cartCount()) return;
   if (!confirm('Kosongkan keranjang?')) return;
   STATE.cart = {}; renderCartUI(); renderCatalog(); closeSheet('cartSheet');
 }
+
 function cartItems(){ return Object.keys(STATE.cart).map(function(id){return STATE.cart[id];}); }
 function cartCount(){ return cartItems().reduce(function(s,i){return s+i.qty;},0); }
 function cartSubtotal(){ return cartItems().reduce(function(s,i){return s+i.qty*Number(i.book.price||0);},0); }
 function cartFee(){ return cartCount() * (Number(STATE.settings.default_jastip_fee) || 0); }
+
 function renderCartUI(){
   var count = cartCount();
   $('cartCount').innerText = count;
@@ -632,8 +1035,8 @@ function renderCartUI(){
     items.map(function(i){
       var id = esc(i.book.book_id);
       return '<div class="cart-item">'+imgTag(i.book.photo_url,'') +
-        '<div class="info"><div style="font-size:13px;font-weight:600;">'+esc(i.book.title)+'</div>' +
-        '<div style="font-size:12px;color:#6b7975;">'+fmtRp(i.book.price)+'</div></div>' +
+        '<div class="info"><div style="font-size:13px;font-weight:700;">'+esc(i.book.title)+'</div>' +
+        '<div style="font-size:12px;color:#7D828A;">'+fmtRp(i.book.price)+'</div></div>' +
         '<div class="qty-ctrl"><button onclick="changeQty(\''+id+'\',-1)">-</button>' +
         '<span>'+i.qty+'</span><button onclick="changeQty(\''+id+'\',1)">+</button></div></div>';
     }).join('');
@@ -643,13 +1046,13 @@ function renderCartUI(){
   $('cartSaveHint').innerText = items.length ? (store ? 'Keranjang tersimpan otomatis di perangkat ini.' : 'Keranjang disimpan di alamat halaman ini — jangan tutup tab sampai selesai checkout.') : '';
   saveCart();
 }
+
 function goCheckout(){
   if (!cartCount()){ alert('Keranjang masih kosong.'); return; }
   restoreBuyer();
   closeSheet('cartSheet'); openSheet('checkoutSheet');
 }
 
-// ================= CHECKOUT =================
 function submitCheckout(){
   var name = $('ckName').value.trim();
   var wa = $('ckWa').value.trim();
@@ -670,7 +1073,7 @@ function submitCheckout(){
     STATE.lastOrder = result.order;
     saveLastOrder(result.order);
     STATE.cart = {};
-    renderCartUI();           // keranjang kosong -> penyimpanan & URL ikut dibersihkan
+    renderCartUI();
     loadBooks(STATE.event.event_id);
     renderLastOrderBar();
     $('successOrderId').innerText = result.order.order_id;
@@ -705,7 +1108,6 @@ function openUpload(orderId, wa){
   openSheet('uploadSheet');
 }
 
-// ================= INVOICE =================
 var currentInvoiceOrderId = null, currentInvoiceWa = null;
 function showInvoice(orderId, wa){
   currentInvoiceOrderId = orderId; currentInvoiceWa = wa;
@@ -729,7 +1131,6 @@ function downloadInvoicePdf(){
   }, function(err){ btn.disabled = false; btn.innerText = 'Download PDF'; alert(err.message); });
 }
 
-// ================= UPLOAD BUKTI =================
 function submitProof(){
   var orderId = $('upOrderId').value.trim().toUpperCase();
   var wa = $('upWa').value.trim();
@@ -756,7 +1157,6 @@ function submitProof(){
   reader.readAsDataURL(file);
 }
 
-// ================= CEK STATUS =================
 function checkStatus(){
   var orderId = $('statusOrderId').value.trim().toUpperCase();
   var wa = $('statusWa').value.trim();
@@ -773,20 +1173,19 @@ function checkStatus(){
     var canUpload = o.order_status!=='CANCELLED' && o.order_status!=='PAID';
     var statusText = { UNPAID:'Menunggu pembayaran', PAYMENT_REVIEW:'Bukti transfer sedang diverifikasi', PAID:'Lunas — pesanan diproses', CANCELLED:'Dibatalkan' }[o.order_status] || o.order_status;
     $('statusResult').innerHTML =
-      '<div style="background:#fff;border-radius:10px;padding:12px;margin-top:12px;">' +
+      '<div style="background:#fff;border-radius:16px;padding:16px;margin-top:12px;box-shadow:var(--card-shadow);">' +
       '<p><b>'+oid+'</b> <span class="badge '+esc(o.order_status)+'">'+esc(o.order_status)+'</span></p>' +
       '<p style="font-size:13px;">'+esc(statusText)+'</p>' +
       '<p>Event: '+esc(data.event?data.event.event_name:'-')+'</p>' +
       '<p>Total: <b>'+fmtRp(o.total_amount)+'</b></p>' +
       '<p>Status Pembayaran: '+esc(o.payment_status)+'</p>' +
-      (o.notes ? '<p style="font-size:12px;color:#c0392b;">Catatan admin: '+esc(o.notes)+'</p>' : '') +
+      (o.notes ? '<p style="font-size:12px;color:var(--danger);">Catatan admin: '+esc(o.notes)+'</p>' : '') +
       '<button class="btn-outline" onclick="showInvoice(\''+oid+'\',\''+owa+'\')">Lihat Invoice</button>' +
       (canUpload ? '<button class="btn-outline" onclick="openUpload(\''+oid+'\',\''+owa+'\')">'+(o.order_status==='PAYMENT_REVIEW'?'Ganti Bukti Transfer':'Upload Bukti Transfer')+'</button>' : '') +
       '</div>';
   }, function(err){ btn.disabled = false; errEl.innerText = err.message; });
 }
 
-// ================= ARSIP =================
 function loadArchiveEvents(){
   $('archiveGrid').innerHTML = '<div class="empty">Memuat...</div>';
   call('getArchivedEvents', [], function(events){
@@ -812,7 +1211,6 @@ function loadArchiveBooks(){
   }, function(err){ $('archiveGrid').innerHTML = '<div class="empty">'+esc(err.message)+'</div>'; });
 }
 
-// ================= COUNTDOWN =================
 function startCountdown(endDate){
   if (STATE.countdownTimer) clearInterval(STATE.countdownTimer);
   var ended = false;
@@ -823,7 +1221,7 @@ function startCountdown(endDate){
     if (diff <= 0){
       el1.innerText='Event telah berakhir'; el2.innerText='Berakhir';
       clearInterval(STATE.countdownTimer);
-      if (!ended){ ended = true; setTimeout(init, 1500); } // muat ulang: event otomatis jadi CLOSED
+      if (!ended){ ended = true; setTimeout(init, 1500); }
       return;
     }
     var d = Math.floor(diff/86400000), h = Math.floor((diff%86400000)/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
@@ -834,15 +1232,12 @@ function startCountdown(endDate){
   STATE.countdownTimer = setInterval(tick, 1000);
 }
 
-// simpan data pembeli saat diketik (debounce), pulihkan saat halaman dibuka
 ['ckName','ckWa','ckAddress'].forEach(function(id){ $(id).addEventListener('input', debounce(saveBuyer, 300)); });
 restoreBuyer();
 init();
 </script>
 <script>
-// Terapkan branding begitu settings tiba (STATE.settings diisi tepat sebelum applyEvent dipanggil)
 (function(){ var orig = applyEvent; applyEvent = function(ev, books){ try{ applyBranding(STATE.settings); }catch(e){} return orig(ev, books); }; })();
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3559bd0cf2314a6',t:'MTc4ODQ0NzQ2NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f"}' crossorigin="anonymous"></script>
 </body>
 </html>
