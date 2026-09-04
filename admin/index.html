@@ -49,6 +49,11 @@
     .empty{text-align:center;color:var(--muted);padding:20px;font-size:12px;}
     .muted{font-size:12px;color:var(--muted);}
     .thumb{width:50px;height:60px;object-fit:cover;border-radius:6px;background:#eee;}
+    .badge.BOUGHT{background:#d6eaf8;color:#1b4f72;}
+    .stat-box.clickable{cursor:pointer;} .stat-box .num.warn{color:#c0392b;}
+    .buylist td.num,.buylist th.num{text-align:right;white-space:nowrap;}
+    .buylist tfoot td{font-weight:700;border-top:2px solid #ddd;}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0;}
   </style>
 </head>
 <body>
@@ -86,7 +91,7 @@
 <script>
   // Tempel URL Web App Apps Script Anda (Deploy > Manage deployments > Web app URL, berakhiran /exec).
   // Syarat deployment: Execute as = Me, Who has access = Anyone.
-  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4X87sH89MpYlEGKhc1OAWAL90jZxPImobfWySPdXfSvdsaFbt1CoXwzljPdAgKj2x/exec';
+  var APPS_SCRIPT_URL = 'PASTE_URL_WEB_APP_ANDA_DI_SINI/exec';
 </script>
 
 <!-- ====================== SHIM google.script (pengganti google.script.run di luar Apps Script) ====================== -->
@@ -184,7 +189,7 @@
 
 <script>
 var PIN = '';
-var STATE = { events: [], currentEventId: null, books: [], orders: [], payments: [] };
+var STATE = { events: [], currentEventId: null, books: [], orders: [], payments: [], pendingOrderFilter: '' };
 var TAB_SEQ = 0; // bertambah tiap pindah tab; callback lama diabaikan bila nilainya sudah berubah
 function stale(seq){ return seq !== TAB_SEQ; }
 function arr(v){ return Array.isArray(v) ? v : []; }
@@ -261,6 +266,7 @@ function renderOverview(){
         '<div class="stat-grid">' +
         '<div class="stat-box"><div class="num">'+n.newOrders+'</div><div class="lbl">Order Baru (UNPAID)</div></div>' +
         '<div class="stat-box"><div class="num">'+n.pendingPayments+'</div><div class="lbl">Bukti TF Perlu Verifikasi</div></div>' +
+        '<div class="stat-box clickable" onclick="openOrdersWithFilter(\'TO_BUY\')" title="Buka daftar belanja"><div class="num'+((n.toPurchase||0)>0?' warn':'')+'">'+(n.toPurchase||0)+'</div><div class="lbl">Pesanan Lunas Perlu Dibelanjakan →</div></div>' +
         '</div>' +
         '<div class="card"><h3>Status Event</h3>' +
         (live ? ('<p><b>'+esc(live.event_name)+'</b> <span class="badge LIVE">LIVE</span></p><p class="muted">Berakhir: '+fmtDate(live.end_datetime)+'</p>')
@@ -468,33 +474,91 @@ function saveBook(bookId){
 }
 
 // ================= PESANAN =================
+function openOrdersWithFilter(f){ STATE.pendingOrderFilter = f; switchTab('pesanan'); }
 function renderPesananTab(){
+  var pre = STATE.pendingOrderFilter || ''; STATE.pendingOrderFilter = '';
   $('mainContent').innerHTML =
     '<div class="row2" style="margin-bottom:8px;">' +
     '<div class="form-group"><label>Filter Status</label><select id="orderStatusFilter" onchange="loadOrders()">' +
-    '<option value="">Semua</option><option>UNPAID</option><option>PAYMENT_REVIEW</option><option>PAID</option><option>CANCELLED</option></select></div>' +
-    '</div><div id="orderList"><div class="empty">Memuat...</div></div>';
+    '<option value="">Semua</option><option value="UNPAID">UNPAID — belum bayar</option><option value="PAYMENT_REVIEW">PAYMENT_REVIEW — cek bukti transfer</option>' +
+    '<option value="PAID">PAID — lunas (semua)</option><option value="TO_BUY">» Lunas, PERLU DIBELANJAKAN</option><option value="BOUGHT">Lunas, sudah dibelanjakan</option>' +
+    '<option value="CANCELLED">CANCELLED</option></select></div>' +
+    '</div><div id="buyList"></div><div id="orderList"><div class="empty">Memuat...</div></div>';
+  if (pre) $('orderStatusFilter').value = pre;
   loadOrders();
 }
-function loadOrders(){
+function orderFilters(){
   var st = $('orderStatusFilter') ? $('orderStatusFilter').value : '';
-  var seq = TAB_SEQ;
-  call('getOrdersAdmin', [PIN, { order_status: st }], function(orders){
+  if (st === 'TO_BUY') return { purchase: 'pending' };
+  if (st === 'BOUGHT') return { purchase: 'done' };
+  return { order_status: st };
+}
+function loadOrders(){
+  var f = orderFilters(), seq = TAB_SEQ;
+  var buyEl = $('buyList'); if (buyEl) buyEl.innerHTML = '';
+  if (f.purchase === 'pending') loadShoppingList(seq);
+  call('getOrdersAdmin', [PIN, f], function(orders){
     if (stale(seq)) return;
     STATE.orders = arr(orders);
     var el = $('orderList'); if(!el) return;
-    if (!STATE.orders.length){ el.innerHTML='<div class="empty">Belum ada order.</div>'; return; }
+    if (!STATE.orders.length){ el.innerHTML='<div class="empty">'+(f.purchase==='pending' ? 'Tidak ada pesanan lunas yang perlu dibelanjakan.' : 'Belum ada order.')+'</div>'; return; }
     el.innerHTML = STATE.orders.map(function(o){
-      var id = esc(o.order_id);
+      var id = esc(o.order_id), paid = o.order_status==='PAID';
       return '<div class="card"><b>'+id+'</b> <span class="badge '+esc(o.order_status)+'">'+esc(o.order_status)+'</span>' +
+        (o.purchased_at ? ' <span class="badge BOUGHT" title="'+fmtDate(o.purchased_at)+'">DIBELANJAKAN</span>' : (paid ? ' <span class="badge NEW">BELUM DIBELANJAKAN</span>' : '')) +
         '<p class="muted" style="margin:2px 0;">'+esc(o.buyer_name)+' &middot; '+esc(o.whatsapp)+' &middot; '+fmtDate(o.created_at)+'</p>' +
         '<p style="font-size:12px;">Total: '+fmtRp(o.total_amount)+'</p>' +
         '<div class="row2">' +
         '<button class="btn outline small" onclick="showOrderDetail(\''+id+'\')">Detail</button>' +
-        (o.order_status!=='CANCELLED' && o.order_status!=='PAID' ? '<button class="btn danger small" onclick="doCancelOrder(\''+id+'\')">Batalkan</button>' : '') +
+        (paid && !o.purchased_at ? '<button class="btn small" onclick="markPurchased([\''+id+'\'], true)">✓ Sudah dibelanjakan</button>' : '') +
+        (paid && o.purchased_at ? '<button class="btn outline small" onclick="markPurchased([\''+id+'\'], false)">Batalkan tanda</button>' : '') +
+        (o.order_status!=='CANCELLED' && !paid ? '<button class="btn danger small" onclick="doCancelOrder(\''+id+'\')">Batalkan</button>' : '') +
         '</div></div>';
     }).join('');
   }, function(err){ var el=$('orderList'); if(el) el.innerHTML = '<div class="error-msg">'+esc(err.message)+'</div>'; });
+}
+// ---- Daftar belanja: pesanan LUNAS yang belum dibelanjakan, digabung per judul ----
+function loadShoppingList(seq){
+  var el = $('buyList'); if (!el) return;
+  el.innerHTML = '<div class="card"><div class="empty">Menyusun daftar belanja...</div></div>';
+  call('getShoppingList', [PIN, {}], function(list){
+    if (stale(seq)) return;
+    el = $('buyList'); if (!el) return;
+    STATE.shoppingList = list;
+    if (!list || !list.items || !list.items.length){ el.innerHTML = ''; return; }
+    var rows = list.items.map(function(it){
+      return '<tr><td>'+esc(it.title)+(it.author ? '<br><span class="muted">'+esc(it.author)+'</span>' : '')+'</td><td class="num"><b>'+esc(it.qty)+'</b></td><td class="num">'+it.orders.length+'</td></tr>';
+    }).join('');
+    var ids = list.orders.map(function(o){ return o.order_id; });
+    el.innerHTML =
+      '<div class="card"><h3>Daftar Belanja</h3>' +
+      '<p class="muted" style="margin:0 0 6px;">'+list.items.length+' judul &middot; <b>'+list.total_qty+' buku</b> &middot; dari '+list.orders.length+' pesanan lunas yang belum dibelanjakan</p>' +
+      '<table class="buylist"><thead><tr><th>Judul</th><th class="num">Jml</th><th class="num">Pesanan</th></tr></thead><tbody>'+rows+'</tbody>' +
+      '<tfoot><tr><td>Total</td><td class="num">'+list.total_qty+'</td><td class="num">'+list.orders.length+'</td></tr></tfoot></table>' +
+      '<div class="toolbar">' +
+      '<button class="btn" onclick="markPurchased('+esc(JSON.stringify(ids))+', true)">✓ Tandai '+list.orders.length+' pesanan sudah dibelanjakan</button>' +
+      '<button class="btn outline" onclick="copyShoppingList()">Salin daftar</button>' +
+      '</div><div class="muted" id="copyMsg"></div></div>';
+  }, function(err){ if (!stale(seq) && $('buyList')) $('buyList').innerHTML = '<div class="error-msg">'+esc(err.message)+'</div>'; });
+}
+function shoppingListText(){
+  var l = STATE.shoppingList; if (!l || !l.items) return '';
+  return 'DAFTAR BELANJA ('+l.total_qty+' buku, '+l.orders.length+' pesanan)\n' +
+    l.items.map(function(it){ return '- '+it.title+(it.author ? ' — '+it.author : '')+' × '+it.qty; }).join('\n');
+}
+function copyShoppingList(){
+  var txt = shoppingListText(), msg = $('copyMsg');
+  function done(ok){ if (msg) msg.innerText = ok ? 'Daftar tersalin — tempel di WhatsApp/Catatan.' : 'Tidak bisa menyalin otomatis; salin manual dari tabel.'; }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function(){ done(true); }, function(){ done(false); });
+  else { try { var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); done(document.execCommand('copy')); document.body.removeChild(ta); } catch(e){ done(false); } }
+}
+function markPurchased(orderIds, purchased){
+  var n = orderIds.length;
+  if (purchased && !confirm('Tandai '+n+' pesanan sebagai SUDAH dibelanjakan?\nPesanan ini akan hilang dari daftar belanja.')) return;
+  call('setOrdersPurchased', [PIN, orderIds, !!purchased], function(res){
+    if (res && res.skipped && res.skipped.length) alert('Dilewati (belum lunas): '+res.skipped.join(', '));
+    loadOrders(); refreshNotif();
+  });
 }
 function showOrderDetail(orderId){
   call('getOrderDetailAdmin', [PIN, orderId], function(d){
@@ -508,6 +572,7 @@ function showOrderDetail(orderId){
       '<p class="muted">Subtotal: '+fmtRp(d.order.subtotal_book)+' | Fee: '+fmtRp(d.order.total_fee)+' | Lain: '+fmtRp(d.order.other_fee)+'</p>' +
       '<p><b>Total: '+fmtRp(d.order.total_amount)+'</b></p>' +
       '<p>Status: <span class="badge '+esc(d.order.order_status)+'">'+esc(d.order.order_status)+'</span> / Bayar: '+esc(d.order.payment_status)+'</p>' +
+      (d.order.order_status==='PAID' ? '<p>Belanja: '+(d.order.purchased_at ? '<span class="badge BOUGHT">SUDAH</span> '+fmtDate(d.order.purchased_at)+' <button class="btn outline small" onclick="closeModal();markPurchased([\''+oid+'\'], false)">Batalkan tanda</button>' : '<span class="badge NEW">BELUM</span> <button class="btn small" onclick="closeModal();markPurchased([\''+oid+'\'], true)">✓ Sudah dibelanjakan</button>')+'</p>' : '') +
       (d.order.notes ? '<p class="muted">Catatan: '+esc(d.order.notes)+'</p>' : '') +
       '<div class="form-group"><label>Biaya Lain</label><input type="number" min="0" id="fOtherFee" value="'+esc(d.order.other_fee)+'"></div>' +
       '<button class="btn outline small" onclick="saveOtherFee(\''+oid+'\')">Update Biaya Lain</button>' +
@@ -560,6 +625,7 @@ function renderRekapTab(){
     '<div class="card"><h3>Export Data</h3>' +
     '<button class="btn" onclick="doExport(\'exportOrdersExcel\')">Export Orders (Excel)</button><br><br>' +
     '<button class="btn outline" onclick="doExport(\'exportPackingListExcel\')">Export Packing List (Excel)</button>' +
+    '<p class="muted" style="margin:8px 0 0;">Packing list kini punya kolom <b>Dibelanjakan</b> dan sheet kedua <b>BELANJA</b> (daftar judul yang masih perlu dibeli).</p>' +
     '<div id="exportResult" style="margin-top:10px;font-size:12px;"></div></div>';
 }
 function doExport(fn){
@@ -618,6 +684,5 @@ google.script.run
   .withFailureHandler(function(err){ var el = document.getElementById('pinError'); if (el) el.innerText = 'Tidak terhubung ke Apps Script: ' + (err && err.message ? err.message : err); })
   .getSettingsObject();
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3559b03bd0c14a6',t:'MTc4ODQ0NzQzMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f"}' crossorigin="anonymous"></script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a35a34bf5933f910',t:'MTc4ODQ5NTY3Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
